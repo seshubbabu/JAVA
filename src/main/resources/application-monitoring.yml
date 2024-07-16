@@ -1,0 +1,21 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"                                        # if not *, then metrics and wavefront should be in include list
+  metrics:
+    tags:
+      source: customer-asset-list-examiner-api
+      app: customer-asset-list-examiner-api
+      api-type: domain
+      api-domain: customer
+      
+    export:
+      wavefront:
+        enabled: true
+        uri: ${vcap.services.monitoring.service.credentials.wavefront-proxy-uri}
+        step: ${vcap.services.monitoring.service.credentials.wavefront-reporting-interval}
+
+wavefront:
+  application:
+    name: customer-enrollment

@@ -1,0 +1,10 @@
+{
+  "method": "Authenticate",
+  "id": -1,
+  "params": {
+    "database": "{{dbName}}",
+    "userName": "{{accessKey}}",
+    "password": "{{{accessSecret}}}",
+    "global": true
+  }
+}

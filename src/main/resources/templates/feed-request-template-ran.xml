@@ -1,0 +1,21 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:ns="http://fwapi.DriverTech.com/CommonTypes/2009/04"
+                  xmlns:dat="http://fwapi.DriverTech.com/DataService_v2">
+    <soapenv:Header>
+        <ns:RequestHeader>
+            <ns:CompanyCode>{{companyCode}}</ns:CompanyCode>
+            <!--Optional:-->
+            <ns:UserName>{{accessKey}}</ns:UserName>
+            <!--Optional:-->
+            <ns:Password>{{accessSecret}}</ns:Password>
+            <!--Optional:-->
+            <ns:DataStoreName>{{dbName}}</ns:DataStoreName>
+            <!--Optional:-->
+            <ns:RequestId>{{requestId}}</ns:RequestId>
+        </ns:RequestHeader>
+    </soapenv:Header>
+     <soapenv:Body>
+        <dat:VehicleStatus_GetAll>
+        </dat:VehicleStatus_GetAll>
+    </soapenv:Body>
+</soapenv:Envelope>

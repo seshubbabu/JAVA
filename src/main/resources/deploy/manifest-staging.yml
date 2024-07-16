@@ -1,0 +1,20 @@
+---
+applications:
+- name: customer-asset-list-examiner-api
+  memory: 1GB
+  instances: 1
+  buildpacks:
+  - java_buildpack_offline
+  stack: cflinuxfs3
+  health-check-type: process
+  services:
+  - unit
+  - api-auth_shared-credhub-sb
+  - monitoring.service
+  routes:
+  - route: customer-asset-list-examiner-api.stg.ptlapps.com
+  env:
+    JAVA_OPTS:
+      -Djava.security.egd=file:///dev/urandom
+    security.basic.enabled: true
+    SPRING_PROFILES_ACTIVE: staging,monitoring

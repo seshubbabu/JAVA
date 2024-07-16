@@ -1,0 +1,12 @@
+{
+  "method": "Get",
+  "params": {
+    "credentials": {
+      "database": "{{dbName}}",
+      "sessionId": "{{sessionId}}",
+      "userName": "{{accessKey}}"
+    },
+    "typeName": "{{typeName}}"
+  }
+}
+

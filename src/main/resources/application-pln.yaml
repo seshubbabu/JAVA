@@ -1,0 +1,51 @@
+com.penske.configuration:
+  configs:
+    pln:
+      endpoint:
+        - name: "feedRequest"
+          httpMethod: GET
+          payloadTemplateLocation: templates/feed-request-template-pln.json
+          contentType: "text/xml"
+          uri: "https://oi.pfmlogin.com/scripts/oi_pnet_get_performx.dll?cid={cid}&pw={accessSecret}&compat_level=2"
+          httpHeaders:
+            - {content-type: "text/xml"}
+          extensions:
+            - xslTemplate: transform.xsl
+          response:
+            process:
+              validation:
+                failIf:
+                  - key: "pnet_response.error_message"
+                    value: "['pnet_response.error_message'] != null"
+            feed-processing:
+                targets:
+                  - name: "Device"
+                    event-metadata:
+                      metadata:
+                        - key: assetId
+                          value: "pnet_get_performx_data_packet.pxreport.vehicle_number"
+                      timestamp:
+                        - name: emitTime
+                          extraction-path: pnet_get_performx_data_packet.pxreport.reportdata.sd
+                        - name: captureTime
+                          extraction-path: pnet_get_performx_data_packet.pxreport.reportdata.sd
+                    query:
+                      event-id: pnet_get_performx_data_packet.pxreport.vehicle_number
+                      select:
+                        - pnet_get_performx_data_packet.pxreport.vehicle_number
+                        - pnet_get_performx_data_packet.pxreport.reportdata.vin
+                      from-path:  "pnet_get_performx_data_packet.pxreport"
+                      where-matches:
+                        - key: "pnet_get_performx_data_packet.pxreport.reportdata.vin"
+                          value-expression: "['pnet_get_performx_data_packet.pxreport.reportdata.vin']  != null and ['pnet_get_performx_data_packet.pxreport.reportdata.vin'] ne ''"
+          transformations:
+              key-translations:
+                 "pnet_get_performx_data_packet.pxreport.reportdata.vin": vin
+                 "pnet_get_performx_data_packet.pxreport.vehicle_number": vehicle_number
+                 "pnet_get_performx_data_packet.pxreport.reportdata.sd": capture_datetime
+              date-transformations:
+                 - {key: captureTime, from: { format: "MM/dd/yyyy HH:mm:ss"}}
+                 - {key: readTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                 - {key: emitTime, from: { format: "MM/dd/yyyy HH:mm:ss"}}
+
+

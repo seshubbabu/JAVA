@@ -1,0 +1,16 @@
+cf-customer:
+  datasource:
+    jdbc-url: jdbc:mysql://cf-operational-hub.cluster-cxiw7em8bs29.us-east-1.rds.amazonaws.com:3306/cf_unit
+    username: ${vcap.services.unit-apis_shared-credhub-sb.credentials.shared_unit-apis_database_username}
+    password: ${vcap.services.unit-apis_shared-credhub-sb.credentials.shared_unit-apis_database_password}
+
+cf-staging:
+  datasource:
+    jdbc-url: jdbc:mysql://cf-operational-hub.cluster-cxiw7em8bs29.us-east-1.rds.amazonaws.com:3306/cf_staging
+    username: ${vcap.services.operational-hub-apis_shared-credhub-sb.credentials.shared_operational-hub-apis_database_username}
+    password: ${vcap.services.operational-hub-apis_shared-credhub-sb.credentials.shared_operational-hub-apis_database_password}
+
+unit-api:
+  by-vin-route: https://ms-unit-api-t3-acp.acp.ptlapps.com/v1/units
+  #by-vin-route:  https://ms-unit-api-acp-qa.acp.ptlapps.com/v1/units
+  get-dataproviders: https://ms-customer-api-acp.acp.ptlapps.com/v1/dataProviders

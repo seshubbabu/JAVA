@@ -1,0 +1,8 @@
+unit-api:
+  by-vin-route: https://ms-unit-api-acp-qa.acp.ptlapps.com/v1/units
+ 
+provider-api:
+  get-provider-customers: https://ms-data-provider-api.acp.ptlapps.com/v1/providers/{providerCode}/customerConfigurations
+cf-foundation:
+  pbe:
+    secretKey: "mZQqICrxVE"

@@ -1,0 +1,56 @@
+com.penske.configuration:
+  configs:
+    ran:
+      endpoint:
+        - name: "feedRequest"
+          httpMethod: POST
+          payloadTemplateLocation: templates/feed-request-template-ran.xml
+          contentType: "text/xml"
+          uri: "https://fwapi.drivertech.com/Data/2_1/DataService.asmx"
+          httpHeaders:
+            - {SOAPAction: "http://fwapi.DriverTech.com/DataService_v2/VehicleStatus_GetAll"}
+            - {content-type: "text/xml"}
+          extensions:
+            - xslTemplate: transform.xsl
+          response:
+            process:
+              validation:
+                failIf:
+                  - key: "Envelope.Body.Fault.faultstring"
+                    value: "['Envelope.Body.Fault.faultstring'] != null"
+            feed-processing:
+                targets:
+                  - name: "Device"
+                    event-metadata:
+                      metadata:
+                        - key: assetId
+                          value: "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.Vehicle.TruckName"
+                      timestamp:
+                        - name: "emitTime"
+                          extraction-path: Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.LastMsgReceived
+                        - name: "captureTime"
+                          extraction-path: Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.LastMsgReceived
+                    query:
+                      event-id:
+                        - Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.Vehicle.TruckName
+                      select:
+                        - Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.Vehicle.TruckName
+                        - Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.VIN
+                        - Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.SerialNr
+                      from-path:  "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus"
+                      where-matches:
+                        - key: "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.VIN"
+                          value-expression: "['Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.VIN']  != null and ['Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.VIN'] ne ''"
+          transformations:
+              key-translations:
+                "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.VIN": vin
+                "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.Vehicle.TruckName": truck_name
+                "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.SerialNr": serial_number
+                "Envelope.Body.VehicleStatus_GetAllResponse.VehicleStatus_GetAllResult.VehicleStatus.LastMsgReceived": LastMsgReceived
+              date-transformations:
+                 - {key: captureTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss", chronoFormat: "MILLI_OF_SECOND", chronoMaxWidth: 3}}
+                 - {key: readTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                 - {key: emitTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss", chronoFormat: "MILLI_OF_SECOND", chronoMaxWidth: 3}}
+
+
+

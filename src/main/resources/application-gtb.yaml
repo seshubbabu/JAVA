@@ -1,0 +1,73 @@
+com.penske.configuration:
+  configs:
+    gtb:
+      endpointchain:
+        - name: "authRequest"
+          httpMethod: POST
+          payloadTemplateLocation: templates/auth-request-template-geotab.json
+          content-type: "application/json"
+          uri: "https://my.{provider}.com/apiv1"
+          httpHeaders:
+            - {content-type: "application/json"}
+          response:
+            process:
+              validation:
+                failIf:
+                  - key: "error.code"
+                    value: "['error.code'] != null and ['error.code'] eq '-32000'"
+              extraction:
+                   feedUri: "result.path"
+                   sessionId: "result.credentials.sessionId"
+        - name: "feedRequest"
+          httpMethod: POST
+          payloadTemplateLocation: templates/feed-request-template-geotab.json
+          contentType: "application/json"
+          uri: "https://{feedUri}/apiv1"
+          httpHeaders:
+            - {content-type: "application/json"}
+          response:
+            process:
+              validation:
+                failIf:
+                  - key: "error.code"
+                    value: "['error.code'] != null and ['error.code'] eq '-32000'"
+            feed-processing:
+                targets:
+                  - name: "Device"
+                    event-metadata:
+                      metadata:
+                        - key: assetId
+                          value: "result.id"
+                      timestamp:
+                        - name: "emitTime"
+                          extraction-path: result.activeFrom
+                        - name: "captureTime"
+                          extraction-path: result.activeFrom
+                    query:
+                      event-id:
+                        - result.id
+                      select:
+                        - result.deviceType
+                        - result.vehicleIdentificationNumber
+                        - result.hardwareId
+                        - result.productId
+                        - result.serialNumber
+                        - result.activeFrom
+                      from-path: "result"
+                      where-matches:
+                        - key: "result.vehicleIdentificationNumber"
+                          value-expression: "['result.vehicleIdentificationNumber']  != null and ['result.vehicleIdentificationNumber'] ne ''"
+          transformations:
+              key-translations:
+                "result.vehicleIdentificationNumber": vin
+                "result.deviceType": device_type
+                "result.serialNumber": serial_number
+                "result.productId": product
+                "result.hardwareId": hardware
+                "result.activeFrom": capture_date
+              date-transformations:
+                - {key: captureTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                - {key: readTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                - {key: emitTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+
+

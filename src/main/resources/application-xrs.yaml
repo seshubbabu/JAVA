@@ -1,0 +1,50 @@
+com.penske.configuration:
+  configs:
+    xrs:
+      endpoint:
+        - name: "feedRequest"
+          httpMethod: GET
+          payloadTemplateLocation: templates/feed-request-template-xrs.json
+          contentType: "text/xml"
+          uri: "https://ws.xataxrs.com/VehicleWebService.svc/vehicles?IsActive=Both"
+          httpHeaders:
+            - {content-type: "text/xml"}
+          extensions:
+            - xslTemplate: transform.xsl
+          credentials:
+            type: BASIC
+            binding: BINDING
+            username: "#accessKey"
+            password: "#accessSecret"
+          response:
+            process:
+              validation:
+                failIf:
+                  - key: "ArrayOfVehicle.Vehicle"
+                    value: "['ArrayOfVehicle.Vehicle'] == ''"
+            feed-processing:
+                targets:
+                  - name: "Device"
+                    event-metadata:
+                      metadata:
+                        - key: assetId
+                          value: "ArrayOfVehicle.Vehicle.SID"
+                      timestamp:
+                        - name: "emitTime"
+                          extraction-path: ArrayOfVehicle.Vehicle.OdometerDate
+                        - name: "captureTime"
+                          extraction-path: ArrayOfVehicle.Vehicle.OdometerDate
+                    query:
+                      event-id: ArrayOfVehicle.Vehicle.VehicleName
+                      select: true
+                      from-path: "ArrayOfVehicle.Vehicle"
+          transformations:
+              key-translations:
+                "ArrayOfVehicle.Vehicle.VIN": vin
+                "ArrayOfVehicle.Vehicle.VehicleName": device_id
+              date-transformations:
+                 - {key: captureTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss", chronoFormat: "MILLI_OF_SECOND", chronoMaxWidth: 6}}
+                 - {key: readTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                 - {key: emitTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss", chronoFormat: "MILLI_OF_SECOND", chronoMaxWidth: 6}}
+
+

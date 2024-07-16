@@ -1,0 +1,110 @@
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+  metrics:
+    tags:
+      app: customer-asset-list-examiner-api
+      env: ${spring.profiles.active}
+      api-type: domain
+      api-domain: customer
+    export:
+      wavefront:
+        enabled: false
+        uri: https://log-stream.system.acp.ptlapps.com/
+        step: 60s
+
+wavefront:
+  application:
+    name: operational-hub
+
+spring:
+  main:
+    allow-bean-definition-overriding: true  
+  profiles:
+    active: acceptance          
+  application:
+    name: customer-asset-list-examiner-api
+logging:
+  pattern:
+    console: "%d{UNIX_MILLIS} %5p %t %c{1} ${spring.application.name:-} p:%X{prv}|c:%X{cst}|u:%X{usr} - %m%n"
+    file: "%d{UNIX_MILLIS} %5p %t %c{1} ${spring.application.name:-} p:%X{prv}|c:%X{cst}|u:%X{usr} - %m%n"
+  level:
+    org:
+      springframework:
+        web:
+          filter:
+            CommonsRequestLoggingFilter: TRACE
+cf-foundation:
+  navigation-links:
+    enable: true
+    default-page: 0
+    default-page-size: 100
+  error-detail:
+    enable: true
+  enhanced-logging:
+    enable-mdc-logging: true
+    enable-exception-detail-logging: true
+    enable-request-data-logging: false
+    enable-exception-request-data-logging: true    
+    http-request-headers:
+      - X-PNSK-API-ENABLE-ERROR-VERBOSITY
+      - X-PNSK-API-REQUEST-TRACKING-ID
+      - X-PNSK-API-LOG-PAYLOAD
+      - X-PNSK-CTX-CST
+      - X-PNSK-CTX-PRV
+      - host
+      - accept-encoding
+      - user-agent
+      - connection
+      - accept
+      - cache-control
+    http-response-headers:
+      - Content-Type
+  tracing:
+    enable: true
+
+  security:
+    type: JWT
+    token:
+      secretkey: ${vcap.services.api-auth_shared-credhub-sb.credentials.shared_api-auth_secretkey}
+      expirationseconds: 43200 # 12 hours
+  http:
+    client:
+      enable: true
+      
+penske-web-error:
+    defaultDefinition:
+        httpErrorCode: 503
+        isTransient: false
+        payloadErrorCode: server.internal.error
+        payloadErrorMessage: The server failed to process this request, If the problem persists please contact us with the request tracking id in the http header
+    definitions:
+    -   exceptionClassName: java.lang.NullPointerException,
+        payloadErrorCode: developer.bug.encountered
+    -   exceptionClassName: org.springframework.http.converter.HttpMessageNotReadableException
+        payloadErrorCode: request.format.invalid
+        payloadErrorMessage: The request is malformed and does not meet the expected schema
+    validationDefault:
+        httpErrorCode: 400
+        payloadErrorCode: order.request.invalid
+
+unit-api:
+  by-vin-route:  https://ms-unit-api-acp-dev.acp.ptlapps.com/v1/units
+#includes all database properties
+cf-customer:
+  datasource:
+    jdbc-url: ${vcap.services.unit.credentials.jdbcUrl}
+    username: ${vcap.services.unit.credentials.username}
+    password: ${vcap.services.unit.credentials.password}
+
+cf-staging:
+  datasource:
+    jdbc-url: ${vcap.services.unit.credentials.jdbcUrl}
+    username: ${vcap.services.unit.credentials.username}
+    password: ${vcap.services.unit.credentials.password}
+MAX_NUM_MASTERIDS: 50

@@ -1,0 +1,50 @@
+com.penske.configuration:
+  configs:
+    sam:
+      endpoint:
+        - name: "feedRequest"
+          httpMethod: POST
+          payloadTemplateLocation: templates/feed-request-template-samsara.json
+          contentType: "application/json"
+          uri: "https://api.samsara.com/fleet/vehicles"
+          httpHeaders:
+            - { content-type: "application/json" }
+            - { Authorization: "'Bearer'.concat(#accessSecret)", literal: false }
+          response:
+            process:
+              validation:
+                failIf:
+                  - key: "error.code"
+                    value: "['error.code'] != null and ['error.code'] eq '-32000'"
+            feed-processing:
+                targets:
+                  - name: "Device"
+                    event-metadata:
+                      metadata:
+                        - key: assetId
+                          value: "data.id"
+                      timestamp:
+                        - name: emitTime
+                          extraction-path: ''
+                        - name: captureTime
+                          extraction-path: ''
+                    query:
+                      event-id:
+                        - data.id
+                      select:
+                        - data.externalIds.samsara.serial
+                        - data.externalIds.samsara.vin
+                      from-path: "data"
+                      where-matches:
+                        - key: "data.externalIds.samsara.vin"
+                          value-expression: "['data.externalIds.samsara.vin']  != null "
+          transformations:
+              key-translations:
+                "data.externalIds.samsara.vin": vin
+                "data.externalIds.samsara.serial": serial_number
+              date-transformations:
+                - {key: captureTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                - {key: readTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+                - {key: emitTime, from: { format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}}
+
+

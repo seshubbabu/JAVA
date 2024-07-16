@@ -1,0 +1,529 @@
+openapi: 3.0.0
+info:
+  title: Vehicle Asset Management API - Documentation
+  version: '1.0.0'
+  termsOfService: 'urn:tos'
+  contact: {}
+  license:
+    name: 'Licensing: Penske Propietary; MSA required'
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+
+  description:  |  
+    <div>The Vehicle Asset Management API provides asset (vehicle) management services.</div>
+
+servers:
+  - url: https://ms-vehicle-asset-management-api.ptlapps.com
+    description: Production Server URL
+  - url: https://ms-vehicle-asset-management-api.stg.ptlapps.com
+    description: Internal staging server URL for testing
+  - url: https://ms-vehicle-asset-management-api.acp.ptlapps.com
+    description: Internal acceptance server URL for development
+
+tags:
+  - name: Assets
+    description: Vehicle Asset Management.
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  # Customer Validation Endpoints
+  /v1/assets/comparison:
+    get:
+      tags:
+        - Assets
+      summary: Retrieve a list of vehicle unit assets, comparing identifiers from the context of Penske, the Customer, and the Data Provider.
+      description:  |  
+        <div>Retrieve a list of vehicle unit assets, comparing identifiers from the context of Penske, the Customer, and the Data Provider.</div>
+        <p>
+          The units are categorized as:
+          <ul>
+            <li>"Expected" - Unit exists in Customer Asset Spreadsheet</li>
+            <li>"Not Expected" - Unit does not exist in Customer Asset Spreadsheet</li>
+            <li>"Unexpected" - Unit exists in Data Provider Asset List but not in either Penske Asset List or Customer Asset List</li>
+          </ul>
+        </p>
+
+      parameters:
+        - $ref: '#/components/parameters/customerIds'
+        - $ref: '#/components/parameters/orderByParam'
+        - $ref: '#/components/parameters/sortParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ComparisonAssets'
+        '400':
+          $ref: '#/components/responses/ResponseBadRequest'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '5XX':
+          $ref: '#/components/responses/ResponseGenericServerError'
+  /v1/assets/comparison/categorized:
+    put:
+      tags:
+        - Assets
+      summary: Categorize a list of assets, indicating whether the asset is 'expected' (expected from the customer asset list) or 'not expected'.
+      description: Categorize a list of assets, indicating whether the asset is an 'expected' asset (expected from the customer asset list) or 'not expected' (the unit does not exist in the customer asset list).
+      requestBody:
+        $ref: '#/components/requestBodies/ComparisonCategorizedAsset'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSuccessfulSave'
+        '400':
+          $ref: '#/components/responses/ResponseBadRequest'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '5XX':
+          $ref: '#/components/responses/ResponseGenericServerError'
+  /v1/assets/comparison/finalized:
+    put:
+      tags:
+        - Assets
+      summary: Finalize (i.e., 'validate') a categorized list of assets, indicating whether the asset is 'expected' (from the customer asset list) or 'not expected'.
+      description: Finalize (i.e., 'validate') a categorized list of assets, indicating whether the asset is an 'expected' asset (expected from the customer asset list) or 'not expected' (the unit does not exist in the customer asset list).  Once finalized/validated, the asset categorizations cannot be changed.
+      requestBody:
+        $ref: '#/components/requestBodies/ComparisonCategorizedAsset'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSuccessfulSave'
+        '400':
+          $ref: '#/components/responses/ResponseBadRequest'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '5XX':
+          $ref: '#/components/responses/ResponseGenericServerError'
+  /v1/assets/comparison/export:
+    get:
+      tags:
+        - Assets
+      summary: Export a list of vehicle unit assets, comparing identifiers from the context of Penske, the Customer, and the Data Provider.
+      description: Export a list of vehicle unit assets, comparing identifiers from the context of Penske, the Customer, and the Data Provider.
+      parameters:
+        - $ref: '#/components/parameters/customerIds'
+      responses:
+        '200':
+          $ref: '#/components/responses/ComparisonAssets'
+        '400':
+          $ref: '#/components/responses/ResponseBadRequest'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '5XX':
+          $ref: '#/components/responses/ResponseGenericServerError'
+  # End Customer Validation Endpoints
+
+#
+# Components
+#
+
+components:
+
+#
+# Components - Security Schemes
+#
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+#
+# Components - Request Bodies
+#
+
+  requestBodies:
+    ComparisonCategorizedAsset:
+      description: Categorized Asset - Categorized as an 'expected' asset (expected from the customer asset list) or 'not expected' (the unit does not exist in the customer asset list).
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              properties:
+                vin:
+                  type: string
+                  example: "1NXAE09B1RZ155488"
+                unitId:
+                  type: number
+                  example: 12345
+                expected:
+                  type: boolean
+                  example: true
+
+#
+# Components - Responses
+#
+
+  # the responses will represent the standard response (data, pagination)
+
+  responses:
+
+    # Customer Validation Responses
+    ComparisonAssets:
+      description: List of assets for an enrollment project
+      content:
+        application/json:
+          schema:
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComparisonCustomer'
+              metadata:
+                type: object
+                properties:
+                  totalRecords:
+                    description: Total assets (total number of VINs)
+                    type: integer
+                    example: 20
+    ResponseSuccessfulSave:
+      description: OK
+      content:
+        application/json:
+          schema:
+            properties:
+              message:
+                type: string
+                example: "Updated successfully."
+    # end Customer Validation Responses
+
+# the following are standard components, parameters, and headers
+
+    ResponseNotFound:
+      description: Not Found. The requested resource does not exist
+      headers:
+        X-PNSK-REQUEST-TRACKING-ID:
+          $ref: '#/components/headers/ResponseHeaderPenskeRequestTrackingId'
+    
+    ResponseBadRequest:
+      description: Bad Request. The request was unacceptable, often due to missing a required parameter. Please refer error payload for details
+      headers:
+        X-PNSK-REQUEST-TRACKING-ID:
+          $ref: '#/components/headers/ResponseHeaderPenskeRequestTrackingId'
+      content:
+        application/json: 
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+            
+    ResponseForbidden:
+      description: Forbidden. The API Key does not have the permissions to provide the request
+      headers:
+        X-PNSK-REQUEST-TRACKING-ID:
+          $ref: '#/components/headers/ResponseHeaderPenskeRequestTrackingId'
+            
+    ResponseUnauthorized:
+      description: Unauthorized. No valid API Key provided
+      headers:
+        X-PNSK-REQUEST-TRACKING-ID:
+          $ref: '#/components/headers/ResponseHeaderPenskeRequestTrackingId'
+            
+    ResponseGenericServerError:
+      description: Something went wrong with our API, sometimes you may be able to retry this request as is without modifications. Please refer the error payload for details
+      headers:
+        X-PNSK-REQUEST-TRACKING-ID:
+          $ref: '#/components/headers/ResponseHeaderPenskeRequestTrackingId'
+             
+#
+# Components - Parameters
+#
+
+  parameters:
+
+    customerIds:
+      in: query
+      name: customerIds
+      description: Comma-separated list of customer master IDs
+      schema:
+        type: string
+      required: true
+      example: 123456,456789
+
+    orderByParam:
+      in: query
+      name: orderBy
+      schema:
+        type: string
+      required: false
+      example: VIN
+      description: the name of the field to apply order by functionality
+      
+    sortParam:
+      in: query
+      name: sortBy
+      schema:
+        type: string
+        enum: 
+          - asc
+          - desc
+      required: false
+      example: asc
+
+    ParameterHeaderPenskeRequestTrackingId:
+      in: header
+      name: X-PNSK-REQUEST-TRACKING-ID
+      description: Allows you to provide a unique id for request tracking.
+      required: false
+      schema:
+        type: string
+        format: uuid
+      example: 8b06cbeb-7e60-11ea-aab8-482ae3461968
+
+    ParameterHeaderPenskeEnableErrorVerbosity:
+      in: header
+      name: X-PNSK-API-ENABLE-ERROR-VERBOSITY
+      description: Enables verbose error messages in the response.
+        Used in conjunction with API configuration for enabling error detail
+        (both this header setting and the API configuration setting need to be set to true, to enable this feature).
+      required: false
+      schema:
+        type: boolean
+      example: true
+
+#
+# Components - Headers
+#
+
+  headers:
+    ResponseHeaderPenskeRequestTrackingId:
+      description: The unique tracking id for this request.
+      schema:
+        type: string
+        format: uuid
+
+# the following are standard components, parameters, and headers (END)
+
+#
+# Components - Schemas
+#
+
+  schemas:
+
+   # Customer Validation Schema
+    ComparisonCustomer:
+      title: Customer Context
+      type: object
+      properties:
+        customer:
+          title: Customer
+          properties:
+            customerNumber:
+              $ref: '#/components/schemas/ComparisonContextBase'
+            units:
+              title: units
+              type: array
+              items:
+                $ref: '#/components/schemas/ComparisonUnit'
+      example:
+        customers:
+          - customerMasterId: 111111
+            units:
+              - unitId: 222222
+                vin: 3ALACWFC0JDJH4630
+                devices:
+                  - deviceId: 333333
+        authorities:
+          - penske:
+              customers:
+                - customerMasterId: 111111
+                  customerNumber: AAA1
+                  units:
+                    - unitId: 222222
+                      unitNumber: AAA2
+                      devices:
+                        - deviceId: 333333
+                          deviceSerialNumber: AAA3
+          - customer:
+              customers:
+                - customerMasterId: 111111
+                  units:
+                    - unitId: 222222
+                      unitNumber: BBB2
+                      devices:
+                        - deviceId: 333333
+                          deviceSerialNumber: BBB3
+          - provider:
+              customers:
+                - customerMasterId: 111111
+                  customerNumber: CCC1
+                  units:
+                    - unitId: 222222
+                      unitNumber: CCC2
+                      devices:
+                        - deviceId: 333333
+                          deviceSerialNumber: CCC3
+
+    ComparisonUnit:
+      title: Unit Context
+      type: object
+      properties:
+        unitId:
+          type: string
+          example: 264297
+        vin:
+          type: string
+          example: 1NXAE09B1RZ155488
+        unitNumber:
+          $ref: '#/components/schemas/ComparisonContext'
+        exists:
+          $ref: '#/components/schemas/ComparisonContextBoolean'
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComparisonDevice'
+    ComparisonDevice:
+      title: Device Context
+      type: object
+      properties:
+        deviceSerialNumber:
+          $ref: '#/components/schemas/ComparisonContext'
+    ComparisonContextBase:
+      title: Comparison Context (Penkse, Customer, Data Provider context)
+      type: object
+      properties:
+        penske:
+          type: string
+          description: The information from Penske's perspective.
+          example: "22222"
+        dataProvider:
+          type: string
+          description: The information from the Data Provider's perspective.
+          example: "33333"
+    ComparisonContext:
+      title: Comparison Context (Penkse, Customer, Data Provider context)
+      type: object
+      allOf: 
+        - $ref: '#/components/schemas/ComparisonContextBase'
+      properties:
+        customer:
+          type: string
+          description: The information from the Customer's perspective.
+          example: "44444"
+    ComparisonContextBoolean:
+      title: Comparison Context (Penkse, Customer, Data Provider context)
+      type: object
+      properties:
+        penske:
+          type: boolean
+          description: The information from Penske's perspective.
+          example: true
+        dataProvider:
+          type: boolean
+          description: The information from the Data Provider's perspective.
+          example: false
+        customer:
+          type: boolean
+          description: The information from the Customer's perspective.
+          example: true
+    # end Customer Validation Schema
+
+# the following are standard schemas
+
+    Href:
+      title: PageLink
+      description: Page Link
+      type: object
+      properties:
+        href:
+          type: string
+          format: url
+          example: /v2/vehicleLocations/...
+
+    PageLinksForArrayContainer:
+      title: PageLinks for Array Container
+      description: PageLinks for Array Container
+      type: object
+      properties:
+        self:
+          type: object
+          $ref: '#/components/schemas/Href'
+      example:
+        self:
+          href: /v1/vehicleLocations/?vins={vins}&numberOfVehicleLocations={numberOfVehicleLocations}
+
+    SchemaPageLinksForArrayItems:
+      title: PageLinks for Array Items
+      description: Allows you to page through the result set of a list.
+      type: object
+
+    GenericError:
+      title: Generic Error
+      description: Generic Error
+      properties:
+         error:
+          type: object
+          properties:
+           code:
+            type: string 
+            description: A machine parseable numeric code
+            example: 4
+           message:
+            type: string
+            description: A developer specified message which accompanies the error.
+            example: Number of VINs received exceeds allowed number of 50.
+           traceId:
+            type: string
+            description: A unique identifier which can be used to trace more details about the error in API logs.
+            example: 462208f7-e8c0-48fe-9d7f-a44434dd71eb
+           transient:
+            type: boolean
+            description: 'Indicates if the error is temporary and the original request can be retried without any modifications. Always false when http error codes are in the 4xx range'
+            example: false
+           diagnosticInfo:
+            type: array
+            items:
+              $ref: '#/components/schemas/DiagnosticInfo'
+
+    DiagnosticInfo:
+      title: Diagnostic/Remediation Information
+      description: Diagnostic/Remediation Information
+      properties:
+        type:
+          type: string 
+          description: Type of issue
+          example: ERROR
+        reason:
+          type: string 
+          description: A user readable string which when populated indicates how the error can be remedied.
+          example: Please request a set of VINs numbering less than or equal to 50.
+
+    ValidationError:
+      title: Validation Error
+      description: Validation Error
+      allOf: 
+        - $ref: '#/components/schemas/GenericError'
+        - type: object
+          properties:
+            error:
+              type: object
+              description: Field validation errors - list of all field validation errors encapsulated by this exception.
+              properties: 
+                errors:
+                  type: array
+                  items:
+                    properties:
+                      name:
+                        type: string
+                        description: The name of the field which is considered invalid.
+                        example: ""
+                      reason:
+                        type: string
+                        description: Plain english text to explain why the field has been rejected.
+                        example: ""
+
+# the following are standard schemas (END)
